@@ -4,10 +4,9 @@ def gamma_setter(obj,idx,x):
     obj.gamma[idx] = tc.DoubleTensor(x).to(obj.gamma.device)**.5
 
 class coupledOde(tc.nn.Module):
-    def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0 ):
+    def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, initGamma ):
         super(coupledOde,self).__init__()
-        self.gamma = tc.nn.Parameter(tc.DoubleTensor().new_empty(nProteins+1))
-        tc.nn.init.normal_(self.gamma)
+        self.gamma = tc.nn.Parameter(tc.DoubleTensor(initGamma)**.5)
         self.gammaPidx = tc.arange(nProteins)
         self.gammaLidx = nProteins
         self.c = tc.DoubleTensor(etaP/LysConc)
@@ -19,7 +18,7 @@ class coupledOde(tc.nn.Module):
         return self.changeDevice()
 
     def cpu( self ):
-        super(coupledOde,self).cuda()
+        super(coupledOde,self).cpu()
         return self.changeDevice()
     
     def changeDevice( self ):
@@ -36,17 +35,26 @@ class coupledOde(tc.nn.Module):
         return A
 
     def forward( self, t ):
-        Lambda,U = tc.eig(self.A(),eigenvectors=True)
-        Ureal,Uimag = generateU(Lambda,U)
+        Lambda2,U2 = tc.eig(self.A().detach(),eigenvectors=True)
+        Ureal2,Uimag2 = generateU(Lambda2,U2)
+        AUreal = tc.mm(self.A(),Ureal2)
+        AUimag = tc.mm(self.A(),Uimag2)
+        Lambda = tc.DoubleTensor().new_empty(Lambda2.shape,device=Lambda2.device)
+        Lambda[:,0] = tc.diag(tc.mm(tc.transpose(AUreal,0,1),Ureal2) +
+                              tc.mm(tc.transpose(AUimag,0,1),Uimag2))
+        Lambda[:,1] = tc.diag(tc.mm(tc.transpose(AUimag,0,1),Ureal2) -
+                              tc.mm(tc.transpose(AUreal,0,1),Uimag2))
+        Ureal,Uimag = cdiv(AUreal,AUimag,Lambda[:,0],Lambda[:,1],tc.div,tc.mul)
+        
         UrealInv,UimagInv = generateUinv(Ureal,Uimag)
         xreal = tc.mm(UrealInv,self.theta0)
         ximag = tc.mm(UimagInv,self.theta0)
-        t = tc.DoubleTensor(t).to(U.device)
+#        t = tc.DoubleTensor().new_tensor(t,device=U2.device)
         yreal,yimag = cmul( tc.exp(t*Lambda[:,0].reshape((-1,1))) * tc.cos(t*Lambda[:,1].reshape((-1,1))),
                             tc.exp(t*Lambda[:,0].reshape((-1,1))) * tc.sin(t*Lambda[:,1].reshape((-1,1))),
-                            xreal*tc.DoubleTensor().new_ones((1,t.shape[0]),device=U.device),
-                            ximag*tc.DoubleTensor().new_ones((1,t.shape[0]),device=U.device), tc.mul )
-        Z = cmul( Ureal, Uimag, yreal, yimag, tc.mm )[0]
+                            xreal*tc.DoubleTensor().new_ones((1,t.shape[0]),device=U2.device),
+                            ximag*tc.DoubleTensor().new_ones((1,t.shape[0]),device=U2.device), tc.mul )
+        Z = tc.mm(Ureal,yreal)
 
         return Z        
 
@@ -88,5 +96,8 @@ def generateU( Lambda, U ):
     return (Ureal,Uimag)
 
 def cmul( areal, aimag, breal, bimag, mop ):
-    return (mop(areal,breal) - mop(aimag,bimag),
+    return (mop(areal,breal),
             mop(areal,bimag) + mop(aimag,breal))
+
+def cdiv( areal, aimag, breal, bimag, dop, mop ):
+    return (dop(areal,breal.reshape((1,-1))),mop(aimag,0))
