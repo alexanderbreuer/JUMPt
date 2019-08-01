@@ -1,7 +1,7 @@
 import torch as tc
 
 def fitReg( reg, t, ft, maxiter=100, tol=1e-7 ):
-    optimizer = tc.optim.LBFGS(reg.parameters(),lr=.01)
+    optimizer = tc.optim.Adamax(reg.parameters(),lr=.001)
     criterion = tc.nn.MSELoss()
 
     def closure():
@@ -10,11 +10,13 @@ def fitReg( reg, t, ft, maxiter=100, tol=1e-7 ):
         loss = criterion( output, ft )
         loss.backward()
         return loss
-    
+
+    U = tc.DoubleTensor().new_empty((ft.shape[0],ft.shape[0]),device=ft.device)
     for n in range(maxiter):
         optimizer.zero_grad()
         output = reg.forward(t)
-        loss = criterion( output, ft )
+        w = tc.DoubleTensor().new_empty((32,1,ft.shape[1]),dtype=ft.dtype,device=ft.device).uniform_()
+        loss = criterion( w*output, w*ft )
         loss.backward()
         optimizer.step(closure)
         print( 'n = {}, loss = {}'.format(n,loss.item()) )
@@ -23,3 +25,4 @@ def fitReg( reg, t, ft, maxiter=100, tol=1e-7 ):
             break
 
     return reg
+
