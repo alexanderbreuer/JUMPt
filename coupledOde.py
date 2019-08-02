@@ -3,10 +3,27 @@ import torch as tc, numpy as np
 def gamma_setter(obj,idx,x):
     obj.gamma[idx] = tc.DoubleTensor(x).to(obj.gamma.device)**.5
 
+def createObjFunction( etaP, LysConc, t, ThetaT ):
+    """
+    Generate a callable objective function that maps gamma to error.
+
+    t is the array of timepoints
+    ThetaT is the array of ThetaP and ThetaL organized as
+       [ThetaP1(0) ThetaP2(0) ... ThetaPn(0) ThetaL(0)]
+       [ThetaP1(t1) ThetaP2(t1) ... ThetaPn(t1) ThetaL(t1)]
+       ...
+       [ThetaP1(tm) ThetaP2(tm) ... ThetaPn(tm) ThetaL(tm)]
+    """
+    n = ThetaT.shape[1] - 1
+    ThetaT = tc.transpose(tc.DoubleTensor(ThetaT),0,1)
+    ThetaTGPU = ThetaT.cuda()
+    t = tc.DoubleTensor(t).cuda()
+    return lambda c: ((coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]), c ).cuda().forward(t) - ThetaTGPU)**2).sum().item()
+
 class coupledOde(tc.nn.Module):
     def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, initGamma ):
         super(coupledOde,self).__init__()
-        self.gamma = tc.nn.Parameter(tc.DoubleTensor(initGamma)**.5)
+        self.gamma = tc.nn.Parameter(tc.abs(tc.DoubleTensor(initGamma))**.5)
         self.gammaPidx = tc.arange(nProteins)
         self.gammaLidx = nProteins
         self.c = tc.DoubleTensor(etaP/LysConc)
