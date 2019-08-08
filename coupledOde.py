@@ -3,7 +3,7 @@ import torch as tc, numpy as np
 def gamma_setter(obj,idx,x):
     obj.gamma[idx] = tc.DoubleTensor(x).to(obj.gamma.device)**.5
 
-def createObjFunction( etaP, LysConc, t, ThetaT ):
+def createObjFunction( etaP, LysConc, ThetaF, t, ThetaT ):
     """
     Generate a callable objective function that maps gamma to error.
 
@@ -18,17 +18,19 @@ def createObjFunction( etaP, LysConc, t, ThetaT ):
     ThetaT = tc.transpose(tc.DoubleTensor(ThetaT),0,1)
     ThetaTGPU = ThetaT.cuda()
     t = tc.DoubleTensor(t).cuda()
-    return lambda c: ((coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]), c ).cuda().forward(t) - ThetaTGPU)**2).sum().item()
+    return lambda c: ((coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]),
+                                   np.array([ThetaF]), c ).cuda().forward(t) - ThetaTGPU)**2).sum().item()
 
 class coupledOde(tc.nn.Module):
-    def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, initGamma ):
+    def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, ThetaF0, initGamma ):
         super(coupledOde,self).__init__()
         self.gamma = tc.nn.Parameter(tc.abs(tc.DoubleTensor(initGamma))**.5)
         self.gammaPidx = tc.arange(nProteins)
         self.gammaLidx = nProteins
         self.c = tc.DoubleTensor(etaP/LysConc)
         self.register_parameter('Gamma',self.gamma)
-        self.theta0 = tc.DoubleTensor(np.vstack((ThetaP0.reshape((-1,1)),ThetaL0.reshape((-1,1)))))
+        self.theta0 = tc.DoubleTensor(np.vstack((ThetaP0.reshape((-1,1)),ThetaL0.reshape((-1,1)),
+                                                 ThetaF0.reshape((-1,1)))))
 
     def cuda( self ):
         super(coupledOde,self).cuda()
@@ -44,13 +46,22 @@ class coupledOde(tc.nn.Module):
         return self
         
     def A( self ):
+        A = tc.DoubleTensor().new_zeros((self.gamma.shape[0]+1,self.gamma.shape[0]+1),device=self.gamma.device)
+        A[range(A.shape[0]-2),range(A.shape[1]-2)] = -(self.gamma[:-1]**2)
+        A[:-2,-2] = self.gamma[:-1]**2
+        A[-2,:-2] = self.c*(self.gamma[:-1]**2)
+        A[-2,-2] = -(self.gamma[-1]**2) - (self.c*(self.gamma[:-1]**2)).sum()
+        A[-2,-1] = self.gamma[-1]**2
+        return A
+
+    def DA( self ):
         A = tc.DoubleTensor().new_zeros((self.gamma.shape[0],self.gamma.shape[0]),device=self.gamma.device)
         A[range(A.shape[0]-1),range(A.shape[1]-1)] = -(self.gamma[:-1]**2)
         A[:-1,-1] = self.gamma[:-1]**2
         A[-1,:-1] = self.c*(self.gamma[:-1]**2)
         A[-1,-1] = -(self.gamma[-1]**2) - (self.c*(self.gamma[:-1]**2)).sum()
         return A
-
+    
     def forward( self, t, Uret=None ):
         Lambda2,U2 = tc.eig(-self.A().detach(),eigenvectors=True)
         ULU = tc.pinverse(U2)
@@ -66,7 +77,7 @@ class coupledOde(tc.nn.Module):
         if not isinstance(Uret,type(None)):
             Uret[:] = U2
         
-        return Z        
+        return Z[:-1,:]
 
     def setGammaP( self, newGammaP ):
         for i in range(len(newGammaP)):
