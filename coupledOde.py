@@ -77,7 +77,7 @@ class coupledOde(tc.nn.Module):
         if not isinstance(Uret,type(None)):
             Uret[:] = U2
         
-        return Z[:,:]
+        return Z[:-1,:]
 
     def setGammaP( self, newGammaP ):
         for i in range(len(newGammaP)):
