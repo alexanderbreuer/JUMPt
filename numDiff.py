@@ -5,7 +5,7 @@ def diffFourier( t, ThetaT, samp=1e6 ):
     ThetaTr = np.empty((xd.shape[0],ThetaT.shape[1]))
     
     for i in range(ThetaTr.shape[1]):
-        finterp = si.interp1d( t, ThetaT[:,i] )
+        finterp = si.interp1d( t, ThetaT[:,i], kind='cubic' )
         ThetaTr[:,i] = finterp( xd )
 
     F = np.hstack([nft.rfft( np.hstack((ThetaTr[:,i],ThetaTr[-np.arange(1,ThetaTr.shape[0]+1),i])) ).reshape((-1,1))
