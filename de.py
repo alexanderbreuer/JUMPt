@@ -4,9 +4,10 @@ def linSys( ThetaHat, ThetaA, dThetaHat, dThetaA, etaP_LysC ):
     """
     Generate one system for a time point.
 
-    ThetaHat := r(Theta_A(t) - Theta_p(t))  (where r is the scalar that we discussed today)
+    ThetaHat := (Theta_L(t) - Theta_p(t))  
     ThetaHat is num_protiens x 1
-    ThetaA is a scalar
+    ThetaA is a scalar := (Theta_F(t) - Theta_L(t))
+    etaP_LysC is num_protiens x 1, contains the eta_P/Lysine concentration ratio
 
     output: A,b for min_x \|Ax - b\|_2^2
     """
@@ -24,9 +25,10 @@ def lstSqMultiPt( ThetaHat, ThetaA, dThetaHat, dThetaA, etaP_LysC ):
     """
     Generate one system for m time points.
 
-    ThetaHat := r(Theta_A(t) - Theta_p(t))  (where r is the scalar that we discussed today)
+    ThetaHat := (Theta_L(t) - Theta_p(t))  
     ThetaHat is num_protiens x m (where m is the number of time points)
-    ThetaA is m x 1
+    ThetaA is m x 1  := (Theta_F(t) - Theta_L(t))
+    etaP_LysC is num_protiens x 1, contains the eta_P/Lysine concentration ratio
 
     output: A,b,funpack for min_x \|Ax - b\|_2^2
             funpack(x) is a function that returns (gamma_p,gamma_a) when given x.
@@ -45,12 +47,3 @@ def solveSparseLstSq( A, b ):
     G = (A.T*A).todense()
     return G**-1*(A.T*b)
 
-def diff( fx ):
-    """
-    Numerically differentiate fx
-    """
-    FX = sft.rfft(np.hstack((fx.T,fx.T*0)))
-    L = 2*np.pi
-    for k in range(FX.shape[0]):
-        FX[k] *= np.exp(2.*np.pi*1j*k/L)    
-    return sft.irfft(FX)
