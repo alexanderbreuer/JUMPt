@@ -1,4 +1,4 @@
-import csv, numpy as np, torch as tc, coupledOde as co, scipy.optimize as so, numpy.random as nr, numDiff as nd, de
+import csv, numpy as np, scipy.optimize as so, numpy.random as nr, numDiff as nd, de
 
 reader = csv.reader(open('test_data2.csv'))
 l = [i for i in reader]
