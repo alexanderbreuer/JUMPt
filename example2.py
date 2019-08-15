@@ -12,8 +12,9 @@ n = 1e4
 
 rt,ft,dft = nd.diffFourier( t, ThetaT, samp=n )
 ti = nr.randint(0,rt.shape[0],1000)
-ThetaH = np.hstack([ft[ti,2].reshape((-1,1)) - ft[ti,0].reshape((-1,1)),ft[ti,2].reshape((-1,1)) - ft[ti,1].reshape((-1,1))])
-ThetaA = .05 - ft[ti,2]
+ThetaH = np.hstack([ft[ti,-1].reshape((-1,1)) - ft[ti,i].reshape((-1,1)) 
+                    for i in range(ThetaT.shape[1]-1)])
+ThetaA = .05 - ft[ti,-1]
 
-A,b,f = de.lstSqMultiPt( ThetaH, ThetaA.reshape((-1,1)), dt[ti,:2], dt[ti,2].reshape((-1,1)), etaP/LysConc )
+A,b,f = de.lstSqMultiPt( ThetaH, ThetaA.reshape((-1,1)), dft[ti,:2], dft[ti,2].reshape((-1,1)), etaP/LysConc )
 x = de.solveSparseLstSq( A, b )
