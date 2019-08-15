@@ -8,12 +8,12 @@ t = data[:,0]
 ThetaT = data[:,(2,3,1)]
 etaP = np.array((3,6))
 LysConc = 200
-n = 1e5
+n = 1e4
 
-rt,dt = nd.diffFourier( t, ThetaT, samp=n )
-ti = (t*n).astype(np.uint64)[1:-1]
-ThetaH = np.hstack([ThetaT[1:-1,2].reshape((-1,1)) - ThetaT[1:-1,0].reshape((-1,1)),ThetaT[1:-1,2].reshape((-1,1)) - ThetaT[1:-1,1].reshape((-1,1))])
-ThetaA = .05 - ThetaT[1:-1,2]
+rt,ft,dft = nd.diffFourier( t, ThetaT, samp=n )
+ti = nr.randint(0,rt.shape[0],1000)
+ThetaH = np.hstack([ft[ti,2].reshape((-1,1)) - ft[ti,0].reshape((-1,1)),ft[ti,2].reshape((-1,1)) - ft[ti,1].reshape((-1,1))])
+ThetaA = .05 - ft[ti,2]
 
 A,b,f = de.lstSqMultiPt( ThetaH, ThetaA.reshape((-1,1)), dt[ti,:2], dt[ti,2].reshape((-1,1)), etaP/LysConc )
 x = de.solveSparseLstSq( A, b )
