@@ -6,9 +6,11 @@ function [Phi,dPhi,Ind] = adaex(alpha,t)
 %
 % The model for this sample problem is
 %
-%   eta(t) = c1 exp(-alpha2 t)*cos(alpha3 t) 
-%          + c2 exp(-alpha1 t)*cos(alpha2 t)
-%          = c1 Phi1 + c2 Phi2.
+%   eta(t) = c1 exp(-alpha1 t)
+%          + c2 exp(-alpha2 t)
+%          + c2 exp(-alpha3 t)
+%          + c2 exp(-alpha4 t)
+%          = c1 Phi1 + c2 Phi2 + c3 Phi3 + c4 Phi4.
 %
 % Given t and alpha, we evaluate Phi, dPhi, and Ind.
 %
@@ -19,8 +21,8 @@ function [Phi,dPhi,Ind] = adaex(alpha,t)
 %          Phi2 = exp(-alpha1 t)*cos(alpha2 t),
 % at each of the data points in t.
 
-    Phi(:,1) = exp(-alpha(2)*t).*cos(alpha(3)*t);
-    Phi(:,2) = exp(-alpha(1)*t).*cos(alpha(2)*t);
+    Phi = exp(abs(alpha)*-t')';
+
 
 % The nonzero partial derivatives of Phi with respect to alpha are
 %              d Phi_1 / d alpha_2 ,
@@ -30,14 +32,10 @@ function [Phi,dPhi,Ind] = adaex(alpha,t)
 % and this determines Ind.
 % The ordering of the columns of Ind is arbitrary but must match dPhi.
 
-    Ind = [1 1 2 2
-           2 3 1 2];
+    Ind = [1 2 3 4 5 
+           1 2 3 4 5];
 
 % Evaluate the four nonzero partial derivatives of Phi at each of 
 % the data points and store them in dPhi.
-
-    dPhi(:,1) = -t .* Phi(:,1);
-    dPhi(:,2) = -t .* exp(-alpha(2)*t).*sin(alpha(3)*t);
-    dPhi(:,3) = -t .* Phi(:,2);
-    dPhi(:,4) = -t .* exp(-alpha(1)*t).*sin(alpha(2)*t);
+    dPhi = (((alpha./abs(alpha))*-t') .* Phi')';
 
