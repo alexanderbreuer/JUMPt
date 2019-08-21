@@ -2,7 +2,7 @@ import scipy.io as sio, parseH as ph, tempfile, os.path, shutil, sys, h5py, csv,
 
 heterogeneous = False
 while '--heterogeneous' in sys.argv:
-    heterogenous = True
+    heterogeneous = True
     sys.argv.pop(sys.argv.index('--heterogeneous'))
     
 if heterogeneous == True:
@@ -27,8 +27,8 @@ for i in range(len(t)):
 open(os.path.join(path,'wrapper.m'),'w').write(str.join(';\n',['run mscript_{}.m'.format(i) for i in range(len(t))])+';\nexit;\n')
 os.system('cd {} && matlab -nojvm -nodisplay -r "run {}"'.format(path,'wrapper.m'))
 
-Lambda = np.empty((5,len(t)))
-C = np.empty((5,len(t)))
+Lambda = np.empty((3,len(t)))
+C = np.empty((3,len(t)))
 for i in range(len(t)):
   d = sio.loadmat(os.path.join(path,'outputs_{}.mat'.format(i)))
   Lambda[:,i] = d['alpha'].reshape((-1,))

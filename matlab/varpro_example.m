@@ -28,9 +28,12 @@
 %y = [ 6.9842;  5.1851;  2.8907;  1.4199; -0.2473; 
 %     -0.5243; -1.0156; -1.0260; -0.9165; -0.6805];
 load INPUT
-y = ft';
-t = t';
-w = ones(size(y));
+%y = ft';
+%t = t';
+rt = [t linspace(min(t),max(t),100)];
+y = interp1(t,ft,rt,'spline')';
+w = [ones(size(t)) .01*ones(1,100)]';
+rt = rt';
 
 % The weights for the least squares fit are stored in w.
 
@@ -42,11 +45,11 @@ options = optimset('Display','iter','DerivativeCheck','on');
 % Set the initial guess for alpha and call varpro to estimate
 % alpha and c.
 
-alphainit = exp(-4:0)';
+alphainit = exp(-3:-1)';
 
 tic
 [alpha,c,wresid,resid_norm,y_est,Regression] = ...
-     varpro(y,w,alphainit,5,@(alpha)adaex(alpha,t),[],[],options);
+     varpro(y,w,alphainit,3,@(alpha)adaex(alpha,rt),[],[],options);
 toc
 
 save( 'OUTPUT', 'alpha','c','wresid','resid_norm','y_est' );

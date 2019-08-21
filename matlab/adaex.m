@@ -32,8 +32,8 @@ function [Phi,dPhi,Ind] = adaex(alpha,t)
 % and this determines Ind.
 % The ordering of the columns of Ind is arbitrary but must match dPhi.
 
-    Ind = [1 2 3 4 5 
-           1 2 3 4 5];
+    Ind = [1 2 3  
+           1 2 3 ];
 
 % Evaluate the four nonzero partial derivatives of Phi at each of 
 % the data points and store them in dPhi.
