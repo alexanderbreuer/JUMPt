@@ -26,7 +26,7 @@ x = de.solveSparseLstSq( A, b )
 G = np.array((A.T*A).todense())
 ATb = np.array(A.T*b)[:,0]
 res = so.minimize( lambda x: nl.norm(np.dot(G,x) - ATb)**2, np.array(np.abs(x)).reshape((-1,)), jac=lambda x: np.dot(G,x) - ATb, bounds=[(0,None)]*G.shape[0], method='SLSQP', options={'iprint':3,'disp':True,'maxiter':25} )
-reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 200, me.ft(Lambda,C,np.array(0)).reshape((-1,))[1:], np.ones(1), np.ones(1)*.05, np.array(res.x).reshape((-1,)) )
+reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 200, np.ones(Lambda.shape[1]-1), np.ones(1), np.ones(1)*.05, np.array(res.x).reshape((-1,)) )
 
 reft,refft,header = ph.parseH( 'Heterodata_2iso.csv', do_squeeze=False )
 reft = np.vstack([x.reshape((1,-1)) for x in reft])
