@@ -13,5 +13,8 @@ def parseH( fname, do_squeeze=True ):
     if do_squeeze:
         t = [squeeze(x[:,i]) for i in range(x.shape[1])]
         ft = [squeeze(fx[:,i]) for i in range(fx.shape[1])]
+    else:
+        t = x
+        ft = fx
         
     return t,ft,header[1:]
