@@ -1,9 +1,16 @@
-import scipy.io as sio, parseH as ph, tempfile, os.path, shutil, sys, h5py, csv, numpy as np
+import scipy.io as sio, parseH as ph, tempfile, os.path, shutil, sys, h5py, csv, numpy as np, os, re
 
 heterogeneous = False
 while '--heterogeneous' in sys.argv:
     heterogeneous = True
     sys.argv.pop(sys.argv.index('--heterogeneous'))
+
+nexp = 3
+for i in range(len(sys.argv)):
+    if '--nexp' in sys.argv[i]:
+        k = sys.argv.pop(i)
+        nexp = int(k.split('=')[1])
+        break
     
 if heterogeneous == True:
     t,ft,header = ph.parseH(sys.argv[1])
@@ -16,13 +23,16 @@ else:
     t = [data[:,0] for i in range(len(ft))]
 
 path = tempfile.mkdtemp()
-for s in ['adaex.m', 'varpro.m']:
+for s in ['varpro.m']:
     shutil.copy(os.path.join('matlab',s),path)
+
+adatemplate = open('matlab/adaex.m').read()
+open(os.path.join(path,'adaex.m'),'w').write(adatemplate.replace('NEXP',str(nexp)))
 
 mtemplate = open('matlab/varpro_example.m').read()
 for i in range(len(t)):
     sio.savemat(os.path.join(path,'inputs_{}.mat'.format(i)),{'t':t[i],'ft':ft[i]})
-    open(os.path.join(path,'mscript_{}.m'.format(i)),'w').write(mtemplate.replace('INPUT','inputs_{}.mat'.format(i)).replace('OUTPUT','outputs_{}.mat'.format(i)))
+    open(os.path.join(path,'mscript_{}.m'.format(i)),'w').write(mtemplate.replace('INPUT','inputs_{}.mat'.format(i)).replace('OUTPUT','outputs_{}.mat'.format(i)).replace('NEXP',str(nexp)))
 
 open(os.path.join(path,'wrapper.m'),'w').write(str.join(';\n',['run mscript_{}.m'.format(i) for i in range(len(t))])+';\nexit;\n')
 os.system('cd {} && matlab -nojvm -nodisplay -r "run {}"'.format(path,'wrapper.m'))

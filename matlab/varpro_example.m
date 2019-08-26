@@ -45,11 +45,11 @@ options = optimset('Display','iter','DerivativeCheck','on');
 % Set the initial guess for alpha and call varpro to estimate
 % alpha and c.
 
-alphainit = exp(-3:-1)';
+alphainit = exp(-NEXP:-1)';
 
 tic
 [alpha,c,wresid,resid_norm,y_est,Regression] = ...
-     varpro(y,w,alphainit,3,@(alpha)adaex(alpha,rt),[],[],options);
+     varpro(y,w,alphainit,NEXP,@(alpha)adaex(alpha,rt),[],[],options);
 toc
 
 save( 'OUTPUT', 'alpha','c','wresid','resid_norm','y_est' );
