@@ -38,12 +38,14 @@ def lstSqMultiPt( ThetaHat, ThetaA, dThetaHat, dThetaA, etaP_LysC ):
     return (ss.vstack([t[0] for t in Abl]),np.vstack([t[1] for t in Abl]),
             lambda x: (x[:-1],x[-1]))
 
-def solveSparseLstSq( A, b ):
+def solveSparseLstSq( A, b, W=None ):
     """
     Solve a sparse least squares problem \min_x \|Ax - b\|_2^2
 
     Uses the normal equations A.TAx = b
     """
-    G = (A.T*A).todense()
-    return G**-1*(A.T*b)
+    if None == W:
+        W = ss.identity(A.shape[0])        
+    G = (A.T*(W*A)).todense()
+    return G**-1*(A.T*(W*b))
 

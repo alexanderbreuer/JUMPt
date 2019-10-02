@@ -32,8 +32,9 @@ load INPUT
 %t = t';
 rt = [t linspace(min(t),max(t),100)];
 y = interp1(t,ft,rt,'spline')';
-w = [ones(size(t)) .01*ones(1,100)]';
-rt = rt';
+w = [ones(size(t)) .01*ones(1,100) 1]';
+rt = [rt 1024]';
+y = [y; 1e-15];
 
 % The weights for the least squares fit are stored in w.
 

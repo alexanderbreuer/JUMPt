@@ -37,8 +37,8 @@ for i in range(len(t)):
 open(os.path.join(path,'wrapper.m'),'w').write(str.join(';\n',['run mscript_{}.m'.format(i) for i in range(len(t))])+';\nexit;\n')
 os.system('cd {} && matlab -nojvm -nodisplay -r "run {}"'.format(path,'wrapper.m'))
 
-Lambda = np.empty((3,len(t)))
-C = np.empty((3,len(t)))
+Lambda = np.empty((nexp,len(t)))
+C = np.empty((nexp,len(t)))
 for i in range(len(t)):
   d = sio.loadmat(os.path.join(path,'outputs_{}.mat'.format(i)))
   Lambda[:,i] = d['alpha'].reshape((-1,))

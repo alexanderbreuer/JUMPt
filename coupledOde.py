@@ -54,6 +54,9 @@ class coupledOde(tc.nn.Module):
         A[-2,-1] = self.gamma[-1]**2
         return A
 
+    def sForward( self, fs ):
+        return tc.mm(self.A(),fs)
+
     def DA( self ):
         A = tc.DoubleTensor().new_zeros((self.gamma.shape[0],self.gamma.shape[0]),device=self.gamma.device)
         A[range(A.shape[0]-1),range(A.shape[1]-1)] = -(self.gamma[:-1]**2)
