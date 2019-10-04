@@ -115,12 +115,12 @@ else:
     mf = tempfile.NamedTemporaryFile(mode='w')
     mf.file.write( 'all: {}\n'.format(str.join(' ',[pid+'.h5' for pid in header[1:]])) )
     for pid in header[1:]:
-        mf.file.write( '{}:\n\tpython fitScipy.py --nexp={} {} --only={} {} {}\n'.format(pid+'.h5',nexp,
-                                                                            '--heterogeneous' if heterogeneous
-                                                                            else '',
-                                                                            pid,sys.argv[1],pid+'.h5') )
+        mf.file.write( '{}:\n\tbsub -K -P prot -q standard -R "rusage[mem=1024]" "OMP_NUM_THREADS=1 python fitScipy.py --nexp={} {} --only={} {} {}"\n'.format(pid+'.h5',nexp,
+                                                                                                                                                               '--heterogeneous' if heterogeneous
+                                                                                                                                                               else '',
+                                                                                                                                                               pid,sys.argv[1],pid+'.h5') )
     mf.file.flush()
-    os.system( 'make -f {} -j 20'.format(mf.name) )
+    os.system( 'make -f {} -j'.format(mf.name) )
     hf = h5py.File( header[1]+'.h5', 'r' )
     Lambda = [np.array(hf['Lambda'])[:,:2]]
     C = [np.array(hf['C'])[:,:2]]
