@@ -29,3 +29,28 @@ def fitReg( reg, t, ft, maxiter=100, tol=1e-7, w=None ):
     return reg
 
 
+def fitDiff( reg, A, B, c, maxiter=100, tol=1e-7, w=None ):
+    optimizer = tc.optim.LBFGS(reg.parameters(),lr=.1)
+    criterion = tc.nn.MSELoss()
+
+    def closure():
+        optimizer.zero_grad()
+        output = reg.forward(A,B)
+        loss = criterion( output, c )
+        loss.backward()
+        return loss
+
+    for n in range(maxiter):
+        optimizer.zero_grad()
+        output = reg.forward(A,B)
+        loss = criterion( output, c ) + tc.nn.functional.relu(-reg.gamma).sum()
+        loss.backward()
+        optimizer.step(closure)
+        print( 'n = {}, loss = {}'.format(n,loss.item()) )
+
+        if tc.abs(tc.abs(loss)).item() < tol:
+            break
+
+    return reg
+
+
