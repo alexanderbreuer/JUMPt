@@ -39,12 +39,12 @@ x0 = np.ones((2236,1))
 x0[-1] = 0.05
 rv = control.forced_response(sys,np.linspace(1,31,500),X0=x0,U=Uv)
 
-reft,refft,header = ph.parseH( 'Min4data_2iso_0919.csv', do_squeeze=False )
-reft = np.vstack([x.reshape((1,-1)) for x in reft])
-refft = np.vstack([x.reshape((1,-1)) for x in refft])
-data = refft[:,list(range(1,refft.shape[1]))+[0]]
-mask = (1 - np.isnan(data)).nonzero()
-residual = (rv[1][:-1,:].T - rv[0])[(0,16,31,
+# reft,refft,header = ph.parseH( 'Min4data_2iso_0919.csv', do_squeeze=False )
+# reft = np.vstack([x.reshape((1,-1)) for x in reft])
+# refft = np.vstack([x.reshape((1,-1)) for x in refft])
+# data = refft[:,list(range(1,refft.shape[1]))+[0]]
+# mask = (1 - np.isnan(data)).nonzero()
+# residual = (rv[1][:-1,:].T - rv[0])[(0,16,31,
 
 def optLysConc():
     def noFun( lc ):
