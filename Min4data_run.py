@@ -10,7 +10,8 @@ LysConc = 200
 
 n = 1e5
 
-t = np.array(f['td'])
+t = np.hstack((np.array(f['td']),[32.]))
+t.sort()
 f = me.ft(Lambda,C,t).T
 df = me.dft(Lambda,C,t).T
 
@@ -24,27 +25,28 @@ B = de.lppBoltOn(ThetaH.shape[0],A.shape[1],t,.0)
 M = ss.hstack((A,B)).tocsr()
 G = (M.T*M).todense()
 U,S,Vt = nl.svd(G)
-x = Vt[:-1,:].T*(np.diagflat(S[:-1]/(S[:-1]**2+0))*(U[:,:-1].T*(M.T*b)))
+gammaUt = Vt[:-1,:].T*(np.diagflat(S[:-1]/(S[:-1]**2+0))*(U[:,:-1].T*(M.T*b)))
+MTb = np.array(M.T*b).reshape((-1,))
+G = np.array(G)
+res = so.minimize( lambda x: nl.norm(np.dot(G,x) - MTb)**2, np.array(np.abs(gammaUt)).reshape((-1,)), jac=lambda x: np.dot(G,x) - MTb, method='SLSQP', options={'iprint':3,'maxiter':64}, bounds=[(0,None)]*G.shape[0] )
 
-reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 206, np.ones(Lambda.shape[1]-1), np.ones(1), np.ones(1)*.05, np.array(x[:A.shape[1],:]).reshape((-1,)) )
+reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 206, np.ones(Lambda.shape[1]-1), np.ones(1), np.ones(1)*.05, np.array(res.x[:A.shape[1]]).reshape((-1,)) )
 sys = control.ss(reg.A().detach(),np.eye(reg.A().shape[0]),np.eye(reg.A().shape[0]),np.zeros(reg.A().shape))
-perm = t.argsort()
-ut = np.vstack(([[0]],np.array(x[A.shape[1]:,:])[perm]))
-tp = np.hstack(([0],t[perm]))
-Uv = np.zeros((reg.A().shape[0],500))
-Uv[-2,:] = si.UnivariateSpline(tp,ut.reshape((-1,)),s=10)(np.linspace(0,31,500))
-
+ut = np.vstack(([[0]],np.array(res.x[A.shape[1]:]).reshape((-1,1))))
+tp = np.hstack(([0],t))
+Uv = np.zeros((reg.A().shape[0],641))
+Uv[-2,:] = si.UnivariateSpline(tp,ut.reshape((-1,)),s=10)(np.arange(0,32+5e-2,5e-2))
 
 x0 = np.ones((2236,1))
 x0[-1] = 0.05
-rv = control.forced_response(sys,np.linspace(1,31,500),X0=x0,U=Uv)
+rv = control.forced_response(sys,np.arange(0,32+5e-2,5e-2),X0=x0,U=Uv)
 
-# reft,refft,header = ph.parseH( 'Min4data_2iso_0919.csv', do_squeeze=False )
-# reft = np.vstack([x.reshape((1,-1)) for x in reft])
-# refft = np.vstack([x.reshape((1,-1)) for x in refft])
-# data = refft[:,list(range(1,refft.shape[1]))+[0]]
-# mask = (1 - np.isnan(data)).nonzero()
-# residual = (rv[1][:-1,:].T - rv[0])[(0,16,31,
+reft,refft,header = ph.parseH( 'Min4data_2iso_0919.csv', do_squeeze=False )
+reft = np.vstack([x.reshape((1,-1)) for x in reft])
+refft = np.vstack([x.reshape((1,-1)) for x in refft])
+residual = rv[1][:-1,(np.power( 2, [0,2,3,4,5] )/5e-2).astype(np.int)] - refft.T
+mask = (1 - np.isnan(residual)).nonzero()
+flatResidual = residual[mask]
 
 def optLysConc():
     def noFun( lc ):
