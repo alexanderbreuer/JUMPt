@@ -17,21 +17,21 @@ df = me.dft(Lambda,C,t).T
 
 ThetaH = np.hstack([f[:,0].reshape((-1,1)) - f[:,i].reshape((-1,1)) 
                     for i in range(1,f.shape[1])])
-ThetaA = .05 - f[:,0]
-ThetaLpp = ThetaH.sum(1)
+ThetaA = -f[:,0]
 
-A,b = de.lstSqMultiPt( ThetaH[:,:], ThetaA.reshape((-1,1)), df[:,1:], df[:,0].reshape((-1,1)), etaP.reshape((-1,))/206, t, .0125 )[:2]
+A,b = de.lstSqMultiPt( ThetaH[:,:], ThetaA.reshape((-1,1)), df[:,1:], (df[:,0]-.05).reshape((-1,1)), etaP.reshape((-1,))/206, t, .0125 )[:2]
 B = de.lppBoltOn(ThetaH.shape[0],A.shape[1],t,.0)
-BLpp = ss.coo_matrix( (-ThetaLpp,(B.nonzero()[0],np.zeros(ThetaLpp.shape[0]).astype(np.int))), shape=(B.shape[0],1) ).tocsr() 
-M = ss.hstack((A,B,BLpp)).tocsr()
-G = (M.T*M).todense()
-U,S,Vt = nl.svd(G)
-gammaUt = Vt[:-1,:].T*(np.diagflat(S[:-1]/(S[:-1]**2+0))*(U[:,:-1].T*(M.T*b)))
+M = ss.hstack((A,B)).tocsr()
+# preconditioning with Jacobi preconditioner
+D = ss.dia_matrix( (1./np.power(M.multiply(M).sum(0),.5),0), (M.shape[1],M.shape[1]) )
+G = (D*M.T*M*D).todense()
+# Tikhonov matrix for regularization
+T = ss.dia_matrix( (np.hstack((np.zeros(A.shape[1]),np.ones(M.shape[1] - A.shape[1]))),0), G.shape )
+gammaUt = D*((G + T*1e-15)**-1*D*(M.T*b))
 
 reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 206, np.ones(Lambda.shape[1]-1), np.ones(1), np.ones(1)*.05, np.array(gammaUt[:A.shape[1]]).reshape((-1,)) )
 sys = control.ss(reg.A().detach(),np.eye(reg.A().shape[0]),np.eye(reg.A().shape[0]),np.zeros(reg.A().shape))
-ut = np.vstack(([[0]],np.array(gammaUt[A.shape[1]:-1]).reshape((-1,1))))
-ut[1:,0] += -ThetaLpp*gammaUt[-1,0]
+ut = np.vstack(([[0]],np.array(gammaUt[A.shape[1]:]).reshape((-1,1))))
 tp = np.hstack(([0],t))
 Uv = np.zeros((reg.A().shape[0],641))
 Uv[-2,:] = si.UnivariateSpline(tp,ut.reshape((-1,)),s=10)(np.arange(0,32+5e-2,5e-2))
