@@ -27,7 +27,7 @@ D = ss.dia_matrix( (1./np.power(M.multiply(M).sum(0),.5),0), (M.shape[1],M.shape
 G = (D*M.T*M*D).todense()
 # Tikhonov matrix for regularization
 T = ss.dia_matrix( (np.hstack((np.zeros(A.shape[1]),np.exp(.5*(t-20))/(1 + np.exp(.5*(t-20))))),0), G.shape ) 
-gammaUt = D*((G + T*1e-15)**-1*D*(M.T*b))
+gammaUt = D*((G + T*9e-1)**-1*D*(M.T*b))
 
 reg = co.coupledOde( Lambda.shape[1]-1, etaP.reshape((-1,)), 206, np.ones(Lambda.shape[1]-1), np.ones(1), np.ones(1)*.05, np.array(gammaUt[:A.shape[1]]).reshape((-1,)) )
 sys = control.ss(reg.A().detach(),np.eye(reg.A().shape[0]),np.eye(reg.A().shape[0]),np.zeros(reg.A().shape))
