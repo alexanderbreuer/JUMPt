@@ -43,7 +43,7 @@ def getGamma( lc ):
     residual = rv[1][:-1,(np.power( 2, [0,2,3,4,5] )/5e-2).astype(np.int)] - refft[:,list(range(1,refft.shape[1]))+[0]].T
     mask = (1 - np.isnan(residual)).nonzero()
     flatResidual = residual[mask]
-    return gamma,flatResidual,
+    return gamma,flatResidual,rv
 
 def optLysConc():
     return so.minimize_scalar( lambda lc: (getGamma(lc)[1]**2).sum(), bounds=(150,400), method='bounded', options={'disp':3} )
