@@ -91,7 +91,7 @@ if None != only:
             break
     resl.append( res )
     td = nr.uniform(min(mins.keys()),max(mins.keys()),128)
-    tdext = nr.uniform(max(mins.keys()),1e4,128)
+    tdext = nr.uniform(max(mins.keys()),max(mins.keys())*2,128)
     tdtot = np.hstack((td,tdext))
     i = header.index(only)
     nofun = NoFun( t[i], nexp*2 )
