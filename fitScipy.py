@@ -1,4 +1,4 @@
-import numpy.linalg as nl, numpy as np, numpy.random as nr, parseH as ph, scipy.optimize as so, sys, h5py, tempfile, os, csv
+import numpy.linalg as nl, numpy as np, numpy.random as nr, parseH as ph, scipy.optimize as so, sys, h5py, tempfile, os
 
 class NoFun:
     def __init__( self, t, n ):
@@ -28,14 +28,14 @@ def get_res( nofun, morefun, nexp, xhat, ft, constraintT, sign=1., rank=0 ):
     w = np.ones(ft.shape)
     w[0] *= 10.
     print( 'rank {}'.format(rank), end='' )
-    res = so.minimize( lambda z: nl.norm(np.multiply(w,np.log(nofun(z)) - np.log(ft)))**2, xhat, bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
+    res = so.minimize( lambda z: nl.norm(np.multiply(w,nofun(z) - ft))**2, xhat, bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
     print( 'rank {}'.format(rank), end='' )    
-    res = so.minimize( lambda z: nl.norm(np.multiply(w,np.log(nofun(z)) - np.log(ft)))**2, xhat, constraints=so.NonlinearConstraint(lambda z: sign*(nofun(z,constraintT) - morefun(constraintT)),0,np.inf), bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
+    res = so.minimize( lambda z: nl.norm(np.multiply(w,nofun(z) - ft))**2, xhat, constraints=so.NonlinearConstraint(lambda z: sign*(nofun(z,constraintT) - morefun(constraintT)),0,np.inf), bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
     i = 1
     while res.status == 3 or res.fun > 5e-1:
         print( 'rank {}'.format(rank), end='' )
         alpha = 1./np.sqrt(++i)
-        res = so.minimize( lambda z: nl.norm(np.multiply(w,np.log(nofun(z)) - np.log(ft)))**2, res.x*(1. - alpha) + alpha*nr.uniform(-1e-1,1e-1,xhat.shape[0]), constraints=so.NonlinearConstraint(lambda z: sign*(nofun(z,constraintT) - morefun(constraintT)),0,np.inf), bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
+        res = so.minimize( lambda z: nl.norm(np.multiply(w,nofun(z) - ft))**2, res.x*(1. - alpha) + alpha*nr.uniform(-1e-1,1e-1,xhat.shape[0]), constraints=so.NonlinearConstraint(lambda z: sign*(nofun(z,constraintT) - morefun(constraintT)),0,np.inf), bounds=[(None,None),(2**-11,None)]*nexp, jac='2-point', hess=so.BFGS(), method='trust-constr', options={'verbose':1,'maxiter':2048,'xtol':1e-8} )
     return res
 
 heterogeneous = False
@@ -91,17 +91,15 @@ if None != only:
             break
     resl.append( res )
     td = nr.uniform(min(mins.keys()),max(mins.keys()),128)
-    tdext = nr.uniform(max(mins.keys()),max(mins.keys())*2,128)
-    tdtot = np.hstack((td,tdext))
     i = header.index(only)
     nofun = NoFun( t[i], nexp*2 )
     morefun = lambda t: (np.abs(resl[0].x[np.arange(0,resl[0].x.shape[0],2)]).reshape((-1,1))*np.exp(-np.abs(resl[0].x[np.arange(1,resl[0].x.shape[0],2)]).reshape((-1,1))*t)).sum(0)
     xhat = nr.uniform(0,.5,resl[0].x.shape[0])
-    res = get_res( nofun, morefun, nexp, xhat, ft[i], tdtot, rank=only )
+    res = get_res( nofun, morefun, nexp, xhat, ft[i], td, rank=only )
 
     for j in range(8):
         xhat = res.x + nr.uniform(-1e-3,1e-3,resl[0].x.shape[0])
-        trial = get_res( nofun, morefun, nexp, xhat, ft[i], tdtot, rank=only )
+        trial = get_res( nofun, morefun, nexp, xhat, ft[i], td, rank=only )
         if trial.fun < res.fun:
             res = trial
         if res.fun < 1e-5:
