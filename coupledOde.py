@@ -19,7 +19,7 @@ def createObjFunction( etaP, LysConc, ThetaF, t, ThetaT, mapper=lambda x: x ):
     ThetaTGPU = ThetaT
     t = tc.DoubleTensor(t)
     return lambda c: ((mapper(coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]),
-                                   np.array([ThetaF]), c ).forward(t)) - mapper(ThetaTGPU))**4).sum().item()
+                                   np.array([ThetaF]), c ).forward(t)) - mapper(ThetaTGPU))**6).sum().item()*1e3
 
 class coupledOde(tc.nn.Module):
     def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, ThetaF0, initGamma ):
