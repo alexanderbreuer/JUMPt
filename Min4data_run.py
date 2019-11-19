@@ -27,7 +27,10 @@ D = ss.dia_matrix( (1./np.power(M.multiply(M).sum(0),.5),0), (M.shape[1],M.shape
 G = (M.T*M).todense()
 # Tikhonov matrix for regularization
 T = ss.dia_matrix( (np.hstack((np.zeros(A.shape[1]),np.exp(.5*(t-20))/(1 + np.exp(.5*(t-20))))),0), G.shape )
-res = so.minimize( lambda x: nl.norm(np.dot(G,x) - MTb.T,2), np.array(np.abs(gammaUt)).reshape((-1,)), jac=lambda x: np.sign(np.dot(G,x) - MTb.T), method='trust-constr', options={'initial_constr_penalty': 1e3,'maxiter':256,'verbose':3}, bounds=[(0,None)]*G.shape[0] )
+MTb = np.array(M.T*b).reshape((-1,))
+gammaUt = np.array(np.dot((G + T*1e-4)**-1, MTb)).reshape((-1,))
+G = np.array(G)
+res = so.minimize( lambda x: nl.norm(np.dot(G,x) - MTb.T,2)**2, np.array(np.abs(gammaUt)).reshape((-1,)), jac=lambda x: np.sign(np.dot(G,x) - MTb.T), method='trust-constr', options={'initial_constr_penalty': 1e3,'maxiter':256,'verbose':3}, bounds=[(0,None)]*G.shape[0] )
 gammaUt = res.x.reshape((-1,1))
 
 # eta p unknown

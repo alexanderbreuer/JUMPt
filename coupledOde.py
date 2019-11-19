@@ -3,7 +3,7 @@ import torch as tc, numpy as np
 def gamma_setter(obj,idx,x):
     obj.gamma[idx] = tc.DoubleTensor(x).to(obj.gamma.device)**.5
 
-def createObjFunction( etaP, LysConc, ThetaF, t, ThetaT ):
+def createObjFunction( etaP, LysConc, ThetaF, t, ThetaT, mapper=lambda x: x ):
     """
     Generate a callable objective function that maps gamma to error.
 
@@ -16,10 +16,10 @@ def createObjFunction( etaP, LysConc, ThetaF, t, ThetaT ):
     """
     n = ThetaT.shape[1] - 1
     ThetaT = tc.transpose(tc.DoubleTensor(ThetaT),0,1)
-    ThetaTGPU = ThetaT.cuda()
-    t = tc.DoubleTensor(t).cuda()
-    return lambda c: ((coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]),
-                                   np.array([ThetaF]), c ).cuda().forward(t) - ThetaTGPU)**2).sum().item()
+    ThetaTGPU = ThetaT
+    t = tc.DoubleTensor(t)
+    return lambda c: ((mapper(coupledOde( n, etaP, LysConc, ThetaT[:-1,0], np.array([ThetaT[-1,0]]),
+                                   np.array([ThetaF]), c ).forward(t)) - mapper(ThetaTGPU))**2).sum().item()
 
 class coupledOde(tc.nn.Module):
     def __init__( self, nProteins, etaP, LysConc, ThetaP0, ThetaL0, ThetaF0, initGamma ):
