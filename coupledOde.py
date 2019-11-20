@@ -1,4 +1,4 @@
-import torch as tc, numpy as np
+import torch as tc, numpy as np, control
 
 def gamma_setter(obj,idx,x):
     obj.gamma[idx] = tc.DoubleTensor(x).to(obj.gamma.device)**.5
